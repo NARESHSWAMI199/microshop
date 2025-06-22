@@ -1,38 +1,42 @@
 services:
-
+  config-server:
+    container_name: microshop-config-server
+    build: ./config-server
+    ports:
+      - "8888:8888"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --spider http://localhost:8888/actuator/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - microshop-network
 
   eureka-server:
     container_name: microshop-eureka-server
     build: ./eureka-server
     ports:
       - "8761:8761"
-    networks:
-      - microshop-network
-
-  config-server:
-    container_name: microshop-config-server
-    build: ./config-server
-    ports:
-      - "8888:8888"
-    networks:
-      - microshop-network
-
-  user-service:
-    container_name: microshop-user-service
-    build: ./user-service
-    ports:
-      - "8081:8081"
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/userdb
-      - SPRING_DATASOURCE_USERNAME=user
-      - SPRING_DATASOURCE_PASSWORD=password
     depends_on:
-      db:
+      config-server:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --spider http://localhost:8761/actuator/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - microshop-network
-
-
 
   db:
     container_name: microshop-postgres
@@ -50,31 +54,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    networks:
-      - microshop-network
-
-
-
-  product-service:
-    container_name: microshop-product-service
-    build: ./product-service
-    ports:
-      - "8082:8082"
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://product-db:5432/productdb
-      - SPRING_DATASOURCE_USERNAME=user
-      - SPRING_DATASOURCE_PASSWORD=password
-    depends_on:
-      product-db:
-        condition: service_healthy
-    networks:
-      - microshop-network
-
-  gateway-service:
-    container_name: microshop-gateway-service
-    build: ./gateway-service
-    ports:
-      - "8080:8080"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - microshop-network
 
@@ -94,10 +78,99 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - microshop-network
+
+  user-service:
+    container_name: microshop-user-service
+    build: ./user-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/userdb
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=password
+    depends_on:
+      db:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --spider http://localhost:8081/actuator/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - microshop-network
+
+  product-service:
+    container_name: microshop-product-service
+    build: ./product-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://product-db:5432/productdb
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=password
+    depends_on:
+      product-db:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --spider http://localhost:8082/actuator/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - microshop-network
+
+  gateway-service:
+    container_name: microshop-gateway-service
+    build: ./gateway-service
+    ports:
+      - "8080:8080"
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - microshop-network
+
 networks:
   microshop-network:
     driver: bridge
-
-
