@@ -1,0 +1,12 @@
+spring:
+  main:
+    web-application-type: reactive
+  application:
+    name: gateway-service
+  config:
+    import: optional:configserver:http://config-server:8888
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

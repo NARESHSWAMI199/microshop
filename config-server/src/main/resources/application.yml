@@ -1,0 +1,27 @@
+server:
+  port: 8888
+spring:
+  application :
+   name : config-server
+  config:
+     import: optional:configserver:http://localhost:8888/
+  profiles:
+     active: default
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/NARESHSWAMI199/microshop-config.git
+          default-label: main
+          skipSslValidation: true
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false #
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

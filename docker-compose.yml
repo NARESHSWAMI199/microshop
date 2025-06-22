@@ -1,0 +1,103 @@
+services:
+
+
+  eureka-server:
+    container_name: microshop-eureka-server
+    build: ./eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - microshop-network
+
+  config-server:
+    container_name: microshop-config-server
+    build: ./config-server
+    ports:
+      - "8888:8888"
+    networks:
+      - microshop-network
+
+  user-service:
+    container_name: microshop-user-service
+    build: ./user-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/userdb
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=password
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - microshop-network
+
+
+
+  db:
+    container_name: microshop-postgres
+    image: postgres:16
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=userdb
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microshop-network
+
+
+
+  product-service:
+    container_name: microshop-product-service
+    build: ./product-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://product-db:5432/productdb
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=password
+    depends_on:
+      product-db:
+        condition: service_healthy
+    networks:
+      - microshop-network
+
+  gateway-service:
+    container_name: microshop-gateway-service
+    build: ./gateway-service
+    ports:
+      - "8080:8080"
+    networks:
+      - microshop-network
+
+  product-db:
+    container_name: microshop-product-postgres
+    image: postgres:16
+    volumes:
+      - ./product-postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=productdb
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microshop-network
+networks:
+  microshop-network:
+    driver: bridge
+
+
